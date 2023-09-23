@@ -14,7 +14,7 @@ typedef struct hashtable {
 // define the components of the hash table here (e.g. the array, bookkeeping for number of elements, etc)
     unsigned int num_elements;
     unsigned int capacity;
-    table_item* store;
+    table_item** store;
 } hashtable;
 
 int allocate(hashtable** ht, int size);

@@ -1,5 +1,6 @@
 #include "hash_table.h"
 #include "stdlib.h"
+#include <stdio.h>
 
 // Initialize the components of a hashtable.
 // The size parameter is the expected number of elements to be inserted.
@@ -9,16 +10,20 @@ int allocate(hashtable** ht, int size) {
     // Allocate new hashtable struct
     hashtable* new_table = malloc(sizeof(hashtable));
     
-    // Allocate array with {size} table_items 
-    table_item* new_store = malloc(sizeof(table_item) * size);
-    
     // Check for malloc errors
-    if (!(new_table || new_store)){
+    if (!(new_table)){
         return -1;
     }
 
-    // Insert store into hashtable to store items
-    new_table->store = new_store;
+    // Allocate the actual store
+    table_item** store = calloc(size, sizeof(table_item*));
+    if (!store) {
+        free(new_table);
+        return -1;
+    }
+
+    // Make the hastable actually point to the store
+    new_table->store = store;
 
     // Set table capacity
     new_table->capacity = size;
@@ -32,6 +37,7 @@ int allocate(hashtable** ht, int size) {
 unsigned int hash(keyType key, unsigned int size)
 {
     return key % size;
+
     // unsigned long hash = 5381;
     // int c;
 
@@ -55,13 +61,9 @@ int put(hashtable* ht, keyType key, valType value) {
     new_item->key = key;
     new_item->val = value;
 
-    if (ht->store[index]) {
-        new_item
-    }
-
-    (void) ht;
-    (void) key;
-    (void) value;
+    new_item->next = ht->store[index];
+    ht->store[index] = new_item;
+    
     return 0;
 }
 
@@ -74,11 +76,15 @@ int put(hashtable* ht, keyType key, valType value) {
 // to get values that it missed during the first call. 
 // This method returns an error code, 0 for success and -1 otherwise (e.g., if the hashtable is not allocated).
 int get(hashtable* ht, keyType key, valType *values, int num_values, int* num_results) {
-    (void) ht;
-    (void) key;
-    (void) values;
-    (void) num_values;
-    (void) num_results;
+    unsigned int pos = hash(key, ht->capacity);
+    *num_results = 0;
+    
+    for (table_item* cur = ht->store[pos]; cur != NULL; cur = cur->next) {
+        if (*num_results < num_values) {
+            values[*num_results] = cur->val;
+        }
+        *num_results = *num_results + 1;
+    }
     return 0;
 }
 
@@ -96,6 +102,16 @@ int deallocate(hashtable* ht) {
     // This line tells the compiler that we know we haven't used the variable
     // yet so don't issue a warning. You should remove this line once you use
     // the parameter.
-    (void) ht;
+    for (unsigned int pos = 0; pos < ht->capacity; pos++) {
+        table_item* cur = ht->store[pos];
+        table_item* tmp;
+        while (cur) {
+            tmp=cur;
+            cur = cur->next;
+            free(tmp);
+        }
+    }
+    free(ht);
+    // (void)ht;
     return 0;
 }
